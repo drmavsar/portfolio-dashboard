@@ -14,7 +14,7 @@
     // To generate: Open browser console and run:
     // crypto.subtle.digest('SHA-256', new TextEncoder().encode('yourpassword')).then(h => console.log(Array.from(new Uint8Array(h)).map(b => b.toString(16).padStart(2, '0')).join('')))
 
-    const PASSWORD_HASH = '5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8'; // Default: "password"
+    const PASSWORD_HASH = '10520197a62afc2368f801cb7e2c53713f5303e66335bdfdcf1239cf285a7450';
     const SESSION_KEY = 'portfolio_auth_token';
     const SESSION_DURATION = 24 * 60 * 60 * 1000; // 24 hours
 
