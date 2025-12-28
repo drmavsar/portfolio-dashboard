@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portföy Yönetimi | Almanak 2025</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+    <div id="loader" class="loader">
+        <div class="loader-text">Veriler Yükleniyor...</div>
+    </div>
+
+    <div class="app-shell">
+
+        <header>
+            <div class="brand">
+                <h1>Mehmet'in Portföyü<span>2025</span></h1>
+            </div>
+            <div class="flex items-center">
+                <div class="market-ticker" id="header-ticker"></div>
+                <div class="header-actions">
+                    <button id="theme-btn">◐</button>
+                    <button id="refresh-btn">⟳</button>
+                </div>
+            </div>
+        </header>
+
+        <div class="main-grid">
+
+            <main>
+                <div class="kpi-row">
+                    <div class="card-kpi">
+                        <div class="label">Toplam Varlık</div>
+                        <div class="value-lg num" id="kpi-total">--</div>
+                        <div class="sub-value num text-muted" id="kpi-total-sub">--</div>
+                    </div>
+                    <div class="card-kpi">
+                        <div class="label">Nakit</div>
+                        <div class="value-lg num" id="kpi-cash">--</div>
+                        <div class="sub-value num text-muted" id="kpi-cash-pct">--%</div>
+                    </div>
+                    <div class="card-kpi">
+                        <div class="label">Portföy Değeri</div>
+                        <div class="value-lg num" id="kpi-stock">--</div>
+                    </div>
+                    <div class="card-kpi">
+                        <div class="label">Net Kar/Zarar</div>
+                        <div class="value-lg num" id="kpi-pl">--</div>
+                        <div class="sub-value num" id="kpi-pl-pct">--%</div>
+                    </div>
+                </div>
+
+                <nav class="nav-tabs">
+                    <button class="tab-link active" data-tab="portfolio">Portföy</button>
+                    <button class="tab-link" data-tab="movements">Hareketler</button>
+                    <button class="tab-link" data-tab="accounts">Hesaplar</button>
+                </nav>
+
+                <div id="tab-content">
+
+                    <div id="view-portfolio">
+                        <div class="table-wrapper">
+                            <div class="table-toolbar">
+                                <span class="label" style="margin:0">Banka Bazlı Hisse Portföyü</span>
+                                <input type="text" id="portfolio-search" class="search-input" placeholder="Hisse Ara...">
+                            </div>
+                            <div id="portfolio-list"></div>
+                        </div>
+                    </div>
+
+                    <div id="view-movements" class="hidden">
+                        <div class="table-wrapper">
+                            <div class="table-toolbar">
+                                <div class="flex gap-2">
+                                    <button class="filter-pill" data-range="daily">Gün</button>
+                                    <button class="filter-pill active" data-range="monthly">Ay</button>
+                                    <button class="filter-pill" data-range="all">Tümü</button>
+                                </div>
+                                <div class="num text-muted" style="font-size:12px" id="mov-summary">--</div>
+                            </div>
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Tarih</th>
+                                        <th>Açıklama</th>
+                                        <th>Kategori</th>
+                                        <th>Banka</th>
+                                        <th class="text-right">Tutar</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="movements-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div id="view-accounts" class="hidden">
+                        <div id="accounts-grid" class="flex-col gap-4"></div>
+                    </div>
+
+                </div>
+            </main>
+
+            <aside>
+                <div class="side-panel">
+                    <div class="panel-header">
+                        <div class="label">Piyasa Görünümü</div>
+                    </div>
+                    <div id="market-list"></div>
+                </div>
+
+                <div style="margin-top: 32px; text-align: center; color: var(--text-tertiary); font-size: 11px;">
+                    <span id="last-update">--</span><br>
+                    Veriler Google Sheets üzerinden sağlanmaktadır.
+                </div>
+            </aside>
+
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>

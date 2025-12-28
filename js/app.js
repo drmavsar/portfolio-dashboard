@@ -1,0 +1,519 @@
+/**
+ * Portfolio Dashboard Application
+ * Main application logic for portfolio management dashboard
+ */
+
+const API_URL = 'https://script.google.com/macros/s/AKfycbxgZ2-EV7AQBd4sjtPTGXw5F1SiOFdbqlYJ3Awa2OwmbiFWSQvTguZ3gF4IHxaYsEtUxA/exec';
+
+const state = {
+    data: null,
+    filterMovements: 'monthly',
+    filterSearch: '',
+    theme: localStorage.getItem('theme') || 'dark'
+};
+
+// ════════════════════════════════════════════════════════════════════════
+// INITIALIZATION
+// ════════════════════════════════════════════════════════════════════════
+
+document.addEventListener('DOMContentLoaded', async () => {
+    applyTheme(state.theme);
+    await fetchData();
+    setupEvents();
+});
+
+// ════════════════════════════════════════════════════════════════════════
+// DATA FETCHING
+// ════════════════════════════════════════════════════════════════════════
+
+async function fetchData() {
+    setLoading(true);
+    try {
+        const res = await fetch(API_URL);
+        const json = await res.json();
+        if (json.error) throw new Error(json.error);
+        state.data = json;
+        render();
+    } catch (e) {
+        console.error(e);
+        alert("Veri çekilemedi: " + e.message);
+    } finally {
+        setLoading(false);
+    }
+}
+
+// ════════════════════════════════════════════════════════════════════════
+// RENDERING
+// ════════════════════════════════════════════════════════════════════════
+
+function render() {
+    if (!state.data) return;
+    try {
+        renderHeader();
+        renderKPI();
+        renderPortfolioGrouped();
+        renderMovements();
+        renderAccounts();
+        renderMarketNative();
+
+        const d = new Date();
+        const timeStr = d.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+        const dateStr = d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' });
+        document.getElementById('last-update').innerText = `${dateStr} ${timeStr} Güncellendi`;
+    } catch (e) {
+        console.error(e);
+    }
+}
+
+// ────────────────────────────────────────────────────────────────────────
+// Render Header
+// ────────────────────────────────────────────────────────────────────────
+
+function renderHeader() {
+    const kurlar = state.data.kurlar;
+    const container = document.getElementById('header-ticker');
+    if (!kurlar || !container) return;
+
+    const keys = ['USD', 'EUR', 'GRA'];
+    let html = '';
+
+    keys.forEach(k => {
+        const item = kurlar[k];
+        if (item) {
+            const colorClass = item.degisim >= 0 ? 'text-up' : 'text-down';
+            html += `
+                <div class="ticker-item">
+                    <div class="ticker-label">${k}/TRY</div>
+                    <div class="ticker-value num ${colorClass}">${formatMoney(item.satis)}</div>
+                </div>
+            `;
+        }
+    });
+
+    container.innerHTML = html;
+}
+
+// ────────────────────────────────────────────────────────────────────────
+// Render KPI Cards
+// ────────────────────────────────────────────────────────────────────────
+
+function renderKPI() {
+    const snaps = state.data.snapshots || [];
+    if (snaps.length === 0) return;
+
+    const curr = snaps[0];
+    const prev = snaps.length > 1 ? snaps[1] : curr;
+    const getVal = (row, key) => parseFloat(row[key] || 0);
+
+    // Total Assets
+    const total = getVal(curr, 'Toplam Varlık');
+    const diff = total - getVal(prev, 'Toplam Varlık');
+    const diffSign = diff >= 0 ? '+' : '';
+    setHtml('kpi-total', formatMoney(total) + " ₺");
+    setHtml('kpi-total-sub', `${diffSign}${formatMoney(diff)} (24s)`);
+    document.getElementById('kpi-total-sub').className = "sub-value num " + (diff >= 0 ? 'text-up' : 'text-down');
+
+    // Cash
+    const cash = getVal(curr, 'Nakit TRY') + getVal(curr, 'Döviz TRY') + getVal(curr, 'Altın TRY');
+    const cashPct = total > 0 ? (cash / total) * 100 : 0;
+    setHtml('kpi-cash', formatMoney(cash) + " ₺");
+    setHtml('kpi-cash-pct', `%${cashPct.toFixed(1)} Nakit`);
+
+    // Portfolio Value
+    const stock = getVal(curr, 'Hisse TRY');
+    setHtml('kpi-stock', formatMoney(stock) + " ₺");
+
+    // P/L
+    const stockPL = getVal(curr, 'Hisse K/Z');
+    const stockCost = stock - stockPL;
+    const plPct = stockCost > 0 ? (stockPL / stockCost * 100) : 0;
+    setHtml('kpi-pl', (stockPL >= 0 ? '+' : '') + formatMoney(stockPL) + " ₺");
+    document.getElementById('kpi-pl').className = "value-lg num " + (stockPL >= 0 ? 'text-up' : 'text-down');
+    setHtml('kpi-pl-pct', `%${plPct.toFixed(2)}`);
+    document.getElementById('kpi-pl-pct').className = "sub-value num " + (stockPL >= 0 ? 'text-up' : 'text-down');
+}
+
+// ────────────────────────────────────────────────────────────────────────
+// Render Portfolio Grouped by Bank
+// ────────────────────────────────────────────────────────────────────────
+
+function renderPortfolioGrouped() {
+    const container = document.getElementById('portfolio-list');
+    if (!container) return;
+    container.innerHTML = '';
+
+    const list = state.data.hisseler || [];
+    const search = state.filterSearch.toLowerCase();
+    const groups = {};
+
+    // Group stocks by bank
+    list.forEach(h => {
+        const sembol = h['Sembol'] || h['Hisse Kodu'] || '';
+        if (!sembol || !sembol.toLowerCase().includes(search)) return;
+
+        const banka = h['Hesap'] || 'Diğer';
+        if (!groups[banka]) groups[banka] = { items: [], totalVal: 0, totalKZ: 0 };
+
+        const adet = parseFloat(h['Adet'] || 0);
+        const fiyat = parseFloat(h['Son İşlem Fiyatı'] || 0);
+        const maliyet = parseFloat(h['Ortalama Maliyet'] || 0);
+        const tutar = parseFloat(h['Tutar'] || (adet * fiyat));
+        const kz = parseFloat(h['Olası Kar/Zarar'] || (tutar - (adet * maliyet)));
+
+        h._calc = { adet, fiyat, maliyet, tutar, kz, sembol };
+        groups[banka].items.push(h);
+        groups[banka].totalVal += tutar;
+        groups[banka].totalKZ += kz;
+    });
+
+    // Render each group
+    Object.keys(groups).forEach(bankName => {
+        const grp = groups[bankName];
+        const plClass = grp.totalKZ >= 0 ? 'text-up' : 'text-down';
+
+        const headerHtml = `
+            <div class="group-header">
+                <div class="group-title">
+                    ${bankName}
+                    <span class="group-badge">${grp.items.length}</span>
+                </div>
+                <div class="text-right">
+                    <div class="group-total num text-muted">
+                        T: <span style="color:var(--text-primary)">${formatMoney(grp.totalVal)}</span>
+                    </div>
+                    <div class="num ${plClass}" style="font-size:11px">
+                        K/Z: ${formatMoney(grp.totalKZ)}
+                    </div>
+                </div>
+            </div>
+        `;
+
+        let rowsHtml = `
+            <table style="width:100%">
+                <thead>
+                    <tr>
+                        <th style="padding-left:24px">Sembol</th>
+                        <th class="text-right">Fiyat</th>
+                        <th class="text-right">Maliyet</th>
+                        <th class="text-right">Değer</th>
+                        <th class="text-right" style="padding-right:24px">K/Z</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        grp.items.forEach(h => {
+            const { sembol, fiyat, maliyet, tutar, kz } = h._calc;
+            const color = kz >= 0 ? 'text-up' : 'text-down';
+            rowsHtml += `
+                <tr>
+                    <td class="fw-medium" style="padding-left:24px">
+                        ${sembol}
+                        <span class="text-muted" style="font-size:11px">(${h._calc.adet})</span>
+                    </td>
+                    <td class="text-right num">${formatMoney(fiyat)}</td>
+                    <td class="text-right num text-muted">${formatMoney(maliyet)}</td>
+                    <td class="text-right num fw-medium">${formatMoney(tutar)}</td>
+                    <td class="text-right num ${color}" style="padding-right:24px">${formatMoney(kz)}</td>
+                </tr>
+            `;
+        });
+
+        rowsHtml += `</tbody></table>`;
+
+        const section = document.createElement('div');
+        section.innerHTML = headerHtml + rowsHtml;
+        container.appendChild(section);
+    });
+}
+
+// ────────────────────────────────────────────────────────────────────────
+// Render Accounts with Currency Conversion
+// ────────────────────────────────────────────────────────────────────────
+
+function renderAccounts() {
+    const grid = document.getElementById('accounts-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    const accs = state.data.hesaplar || [];
+    const grouped = {};
+    const kurlar = state.data.kurlar || {};
+
+    // Group accounts by bank
+    accs.forEach(a => {
+        const banka = a['Banka'] || 'Diğer';
+        if (!grouped[banka]) grouped[banka] = { items: [], totalTRY: 0 };
+
+        const rawVal = parseFloat(a['Bakiye'] || 0);
+        const pb = a['PB'] || 'TRY';
+
+        // Calculate TRY equivalent
+        let valTRY = rawVal;
+        let exchangeRate = 1;
+
+        if (pb !== 'TRY') {
+            if (pb === 'Altın' && kurlar['GRA']) {
+                exchangeRate = kurlar['GRA'].alis;
+            } else if (kurlar[pb]) {
+                exchangeRate = kurlar[pb].alis;
+            }
+            valTRY = rawVal * exchangeRate;
+        }
+
+        a._calculated = { rawVal, pb, valTRY };
+        grouped[banka].items.push(a);
+        grouped[banka].totalTRY += valTRY;
+    });
+
+    // Render each group
+    Object.keys(grouped).forEach(bank => {
+        const grp = grouped[bank];
+        const div = document.createElement('div');
+        div.className = 'table-wrapper';
+
+        let rows = '';
+        grp.items.forEach(a => {
+            const { rawVal, pb, valTRY } = a._calculated;
+            const displayVal = formatMoney(valTRY);
+            const subText = pb !== 'TRY' ? `${rawVal} ${pb}` : 'TRY';
+
+            rows += `
+                <tr>
+                    <td style="padding:12px 24px">
+                        <div class="fw-medium">${a['Hesap Adı'] || '-'}</div>
+                        <div style="font-size:11px" class="text-muted num">${a['IBAN'] || ''}</div>
+                    </td>
+                    <td class="text-right">
+                        <div class="num fw-medium">${displayVal} ₺</div>
+                        <div class="text-muted num" style="font-size:11px">${subText}</div>
+                    </td>
+                </tr>
+            `;
+        });
+
+        div.innerHTML = `
+            <div style="padding:12px 24px; border-bottom:1px solid var(--border-subtle); background:var(--bg-surface-hover); display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-weight:600; font-size:12px; letter-spacing:0.05em; color:var(--text-tertiary); text-transform:uppercase;">${bank}</span>
+                <span class="num text-primary" style="font-size:13px; font-weight:600;">≈ ${formatMoney(grp.totalTRY)} ₺</span>
+            </div>
+            <table>${rows}</table>
+        `;
+        grid.appendChild(div);
+    });
+}
+
+// ────────────────────────────────────────────────────────────────────────
+// Render Movements/Transactions
+// ────────────────────────────────────────────────────────────────────────
+
+function renderMovements() {
+    const tbody = document.getElementById('movements-body');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    const raw = state.data.hareketler || [];
+    const sorted = [...raw].reverse();
+    const now = new Date();
+
+    // Filter by time range
+    let filtered = sorted.filter(m => {
+        if (!m['Tarih']) return false;
+        const d = new Date(m['Tarih']);
+        if (state.filterMovements === 'all') return true;
+        if (state.filterMovements === 'monthly') {
+            return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+        }
+        if (state.filterMovements === 'daily') {
+            return d.toDateString() === now.toDateString();
+        }
+        return true;
+    });
+
+    filtered = filtered.slice(0, 50);
+
+    // Calculate expense summary
+    let expense = 0;
+    filtered.forEach(m => {
+        if (m['Ana Kategori'] === 'Gider') {
+            expense += parseFloat(m['Tutar'] || 0);
+        }
+    });
+    setHtml('mov-summary', `Gider: <span class="text-down">-${formatMoney(expense)}</span>`);
+
+    // Render rows
+    filtered.forEach(m => {
+        const tutar = parseFloat(m['Tutar'] || 0);
+        const isExp = m['Ana Kategori'] === 'Gider';
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td class="num text-muted">${formatDate(m['Tarih'])}</td>
+            <td>
+                <div class="fw-medium">${m['Açıklama'] || '-'}</div>
+                <div style="font-size:11px" class="text-muted">${m['Etiket'] || ''}</div>
+            </td>
+            <td>
+                <span style="font-size:11px; padding:2px 8px; background:var(--bg-body); border-radius:4px; color:var(--text-tertiary)">
+                    ${m['Alt Kategori'] || '-'}
+                </span>
+            </td>
+            <td style="font-size:12px">${m['Banka'] || '-'}</td>
+            <td class="text-right num fw-medium ${isExp ? '' : 'text-up'}">
+                ${isExp ? '-' : '+'}${formatMoney(tutar)}
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+// ────────────────────────────────────────────────────────────────────────
+// Render Market Overview
+// ────────────────────────────────────────────────────────────────────────
+
+function renderMarketNative() {
+    const listContainer = document.getElementById('market-list');
+    if (!listContainer) return;
+    listContainer.innerHTML = '';
+
+    const data = state.data.piyasa || [];
+    if (data.length === 0) {
+        listContainer.innerHTML = '<div style="color:var(--text-tertiary);text-align:center">Veri yok</div>';
+        return;
+    }
+
+    const groups = {
+        'EN_AKTIF': { title: 'Hacimli', items: [] },
+        'KAR_EDEN': { title: 'Yükselen', items: [] },
+        'ZARAR_EDEN': { title: 'Düşen', items: [] }
+    };
+
+    data.forEach(item => {
+        const listType = item['Liste'];
+        if (listType && groups[listType]) {
+            groups[listType].items.push(item);
+        }
+    });
+
+    Object.keys(groups).forEach(key => {
+        const grp = groups[key];
+        if (grp.items.length === 0) return;
+
+        const titleDiv = document.createElement('div');
+        titleDiv.className = 'market-category-title';
+        titleDiv.innerText = grp.title;
+        listContainer.appendChild(titleDiv);
+
+        grp.items.slice(0, 5).forEach(s => {
+            const sembol = s['Sembol'] || s['Isim'] || '-';
+            const fark = parseFloat(s['Fark %'] || 0);
+            const fiyat = parseFloat(s['Son Fiyat'] || 0);
+            const isUp = fark >= 0;
+
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'market-list-item';
+            itemDiv.innerHTML = `
+                <div class="flex-col">
+                    <span class="fw-semibold" style="font-size:13px">${sembol}</span>
+                    <span class="text-muted num" style="font-size:11px">${formatMoney(fiyat)}</span>
+                </div>
+                <div class="num ${isUp ? 'text-up' : 'text-down'}" style="font-size:13px; font-weight:500;">
+                    ${isUp ? '▲' : '▼'} %${(fark * 100).toFixed(2)}
+                </div>
+            `;
+            listContainer.appendChild(itemDiv);
+        });
+    });
+}
+
+// ════════════════════════════════════════════════════════════════════════
+// EVENT HANDLERS
+// ════════════════════════════════════════════════════════════════════════
+
+function setupEvents() {
+    // Tab navigation
+    document.querySelectorAll('.tab-link').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            document.querySelectorAll('.tab-link').forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active');
+
+            ['portfolio', 'movements', 'accounts'].forEach(v => {
+                const el = document.getElementById('view-' + v);
+                if (el) el.classList.add('hidden');
+            });
+
+            const target = document.getElementById('view-' + e.target.dataset.tab);
+            if (target) target.classList.remove('hidden');
+        });
+    });
+
+    // Movement filter pills
+    document.querySelectorAll('.filter-pill').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            document.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active');
+            state.filterMovements = e.target.dataset.range;
+            renderMovements();
+        });
+    });
+
+    // Portfolio search
+    const search = document.getElementById('portfolio-search');
+    if (search) {
+        search.addEventListener('input', (e) => {
+            state.filterSearch = e.target.value;
+            renderPortfolioGrouped();
+        });
+    }
+
+    // Theme toggle
+    document.getElementById('theme-btn').addEventListener('click', () => {
+        applyTheme(state.theme === 'dark' ? 'light' : 'dark');
+    });
+
+    // Refresh button
+    document.getElementById('refresh-btn').addEventListener('click', fetchData);
+}
+
+// ════════════════════════════════════════════════════════════════════════
+// UTILITY FUNCTIONS
+// ════════════════════════════════════════════════════════════════════════
+
+function formatMoney(val) {
+    return new Intl.NumberFormat('tr-TR', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    }).format(val || 0);
+}
+
+function formatDate(str) {
+    if (!str) return '-';
+    return new Date(str).toLocaleDateString('tr-TR', {
+        day: 'numeric',
+        month: 'short'
+    });
+}
+
+function setLoading(bool) {
+    const el = document.getElementById('loader');
+    if (el) {
+        el.style.opacity = bool ? '1' : '0';
+        setTimeout(() => {
+            if (!bool) {
+                el.classList.add('hidden');
+            } else {
+                el.classList.remove('hidden');
+            }
+        }, 500);
+    }
+}
+
+function setHtml(id, val) {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = val;
+}
+
+function applyTheme(t) {
+    document.body.setAttribute('data-theme', t);
+    state.theme = t;
+    localStorage.setItem('theme', t);
+}
