@@ -113,7 +113,7 @@ function renderKPI() {
     const diffSign = diff >= 0 ? '+' : '';
     setHtml('kpi-total', formatMoney(total) + " ₺");
     setHtml('kpi-total-sub', `${diffSign}${formatMoney(diff)} (24s)`);
-    document.getElementById('kpi-total-sub').className = "sub-value num " + (diff >= 0 ? 'text-up' : 'text-down');
+    document.getElementById('kpi-total-sub').className = "sub-value num sensitive " + (diff >= 0 ? 'text-up' : 'text-down');
 
     // Cash
     const cash = getVal(curr, 'Nakit TRY') + getVal(curr, 'Döviz TRY') + getVal(curr, 'Altın TRY');
@@ -130,9 +130,9 @@ function renderKPI() {
     const stockCost = stock - stockPL;
     const plPct = stockCost > 0 ? (stockPL / stockCost * 100) : 0;
     setHtml('kpi-pl', (stockPL >= 0 ? '+' : '') + formatMoney(stockPL) + " ₺");
-    document.getElementById('kpi-pl').className = "value-lg num " + (stockPL >= 0 ? 'text-up' : 'text-down');
+    document.getElementById('kpi-pl').className = "value-lg num sensitive " + (stockPL >= 0 ? 'text-up' : 'text-down');
     setHtml('kpi-pl-pct', `%${plPct.toFixed(2)}`);
-    document.getElementById('kpi-pl-pct').className = "sub-value num " + (stockPL >= 0 ? 'text-up' : 'text-down');
+    document.getElementById('kpi-pl-pct').className = "sub-value num sensitive " + (stockPL >= 0 ? 'text-up' : 'text-down');
 }
 
 // ────────────────────────────────────────────────────────────────────────
@@ -159,10 +159,22 @@ function renderPortfolioGrouped() {
         const adet = parseFloat(h['Adet'] || 0);
         const fiyat = parseFloat(h['Son İşlem Fiyatı'] || 0);
         const maliyet = parseFloat(h['Ortalama Maliyet'] || 0);
+
+        // Parse daily change: "1,65%" or "-1,92%" format
+        let degisimRaw = h['Günlük Değişim'] || h['Değişim'] || 0;
+        let degisim = 0;
+        if (typeof degisimRaw === 'string') {
+            degisim = parseFloat(degisimRaw.replace('%', '').replace(',', '.')) || 0;
+        } else {
+            degisim = parseFloat(degisimRaw) || 0;
+            // If decimal like 0.0165, multiply by 100
+            if (Math.abs(degisim) < 1 && degisim !== 0) degisim = degisim * 100;
+        }
+
         const tutar = parseFloat(h['Tutar'] || (adet * fiyat));
         const kz = parseFloat(h['Olası Kar/Zarar'] || (tutar - (adet * maliyet)));
 
-        h._calc = { adet, fiyat, maliyet, tutar, kz, sembol };
+        h._calc = { adet, fiyat, maliyet, degisim, tutar, kz, sembol };
         groups[banka].items.push(h);
         groups[banka].totalVal += tutar;
         groups[banka].totalKZ += kz;
@@ -181,9 +193,9 @@ function renderPortfolioGrouped() {
                 </div>
                 <div class="text-right">
                     <div class="group-total num text-muted">
-                        T: <span style="color:var(--text-primary)">${formatMoney(grp.totalVal)}</span>
+                        T: <span class="sensitive" style="color:var(--text-primary)">${formatMoney(grp.totalVal)}</span>
                     </div>
-                    <div class="num ${plClass}" style="font-size:11px">
+                    <div class="num ${plClass} sensitive" style="font-size:11px">
                         K/Z: ${formatMoney(grp.totalKZ)}
                     </div>
                 </div>
@@ -196,6 +208,7 @@ function renderPortfolioGrouped() {
                     <tr>
                         <th style="padding-left:24px">Sembol</th>
                         <th class="text-right">Fiyat</th>
+                        <th class="text-right">%</th>
                         <th class="text-right">Maliyet</th>
                         <th class="text-right">Değer</th>
                         <th class="text-right" style="padding-right:24px">K/Z</th>
@@ -205,8 +218,10 @@ function renderPortfolioGrouped() {
         `;
 
         grp.items.forEach(h => {
-            const { sembol, fiyat, maliyet, tutar, kz } = h._calc;
+            const { sembol, fiyat, maliyet, degisim, tutar, kz } = h._calc;
             const color = kz >= 0 ? 'text-up' : 'text-down';
+            const degColor = degisim >= 0 ? 'text-up' : 'text-down';
+            const degSign = degisim >= 0 ? '+' : '';
             rowsHtml += `
                 <tr>
                     <td class="fw-medium" style="padding-left:24px">
@@ -214,9 +229,10 @@ function renderPortfolioGrouped() {
                         <span class="text-muted" style="font-size:11px">(${h._calc.adet})</span>
                     </td>
                     <td class="text-right num">${formatMoney(fiyat)}</td>
+                    <td class="text-right num ${degColor}" style="font-size:12px">${degSign}${degisim.toFixed(2)}</td>
                     <td class="text-right num text-muted">${formatMoney(maliyet)}</td>
-                    <td class="text-right num fw-medium">${formatMoney(tutar)}</td>
-                    <td class="text-right num ${color}" style="padding-right:24px">${formatMoney(kz)}</td>
+                    <td class="text-right num fw-medium sensitive">${formatMoney(tutar)}</td>
+                    <td class="text-right num ${color} sensitive" style="padding-right:24px">${formatMoney(kz)}</td>
                 </tr>
             `;
         });
@@ -287,8 +303,8 @@ function renderAccounts() {
                         <div style="font-size:11px" class="text-muted num">${a['IBAN'] || ''}</div>
                     </td>
                     <td class="text-right">
-                        <div class="num fw-medium">${displayVal} ₺</div>
-                        <div class="text-muted num" style="font-size:11px">${subText}</div>
+                        <div class="num fw-medium sensitive">${displayVal} ₺</div>
+                        <div class="text-muted num sensitive" style="font-size:11px">${subText}</div>
                     </td>
                 </tr>
             `;
@@ -297,7 +313,7 @@ function renderAccounts() {
         div.innerHTML = `
             <div style="padding:12px 24px; border-bottom:1px solid var(--border-subtle); background:var(--bg-surface-hover); display:flex; justify-content:space-between; align-items:center;">
                 <span style="font-weight:600; font-size:12px; letter-spacing:0.05em; color:var(--text-tertiary); text-transform:uppercase;">${bank}</span>
-                <span class="num text-primary" style="font-size:13px; font-weight:600;">≈ ${formatMoney(grp.totalTRY)} ₺</span>
+                <span class="num text-primary sensitive" style="font-size:13px; font-weight:600;">≈ ${formatMoney(grp.totalTRY)} ₺</span>
             </div>
             <table>${rows}</table>
         `;
@@ -334,14 +350,18 @@ function renderMovements() {
 
     filtered = filtered.slice(0, 50);
 
-    // Calculate expense summary
+    // Calculate both income and expense
     let expense = 0;
+    let income = 0;
     filtered.forEach(m => {
+        const tutar = parseFloat(m['Tutar'] || 0);
         if (m['Ana Kategori'] === 'Gider') {
-            expense += parseFloat(m['Tutar'] || 0);
+            expense += tutar;
+        } else if (m['Ana Kategori'] === 'Gelir') {
+            income += tutar;
         }
     });
-    setHtml('mov-summary', `Gider: <span class="text-down">-${formatMoney(expense)}</span>`);
+    setHtml('mov-summary', `Gelir: <span class="text-up sensitive">+${formatMoney(income)}</span> &nbsp;│&nbsp; Gider: <span class="text-down sensitive">-${formatMoney(expense)}</span>`);
 
     // Render rows
     filtered.forEach(m => {
@@ -360,7 +380,7 @@ function renderMovements() {
                 </span>
             </td>
             <td style="font-size:12px">${m['Banka'] || '-'}</td>
-            <td class="text-right num fw-medium ${isExp ? '' : 'text-up'}">
+            <td class="text-right num fw-medium sensitive ${isExp ? '' : 'text-up'}">
                 ${isExp ? '-' : '+'}${formatMoney(tutar)}
             </td>
         `;
@@ -384,9 +404,9 @@ function renderMarketNative() {
     }
 
     const groups = {
-        'EN_AKTIF': { title: 'Hacimli', items: [] },
         'KAR_EDEN': { title: 'Yükselen', items: [] },
-        'ZARAR_EDEN': { title: 'Düşen', items: [] }
+        'ZARAR_EDEN': { title: 'Düşen', items: [] },
+        'EN_AKTIF': { title: 'Hacimli', items: [] }
     };
 
     data.forEach(item => {
@@ -396,9 +416,11 @@ function renderMarketNative() {
         }
     });
 
-    Object.keys(groups).forEach(key => {
+    // Render in order: Rising, Falling, Active
+    const sortOrder = ['KAR_EDEN', 'ZARAR_EDEN', 'EN_AKTIF'];
+    sortOrder.forEach(key => {
         const grp = groups[key];
-        if (grp.items.length === 0) return;
+        if (!grp || grp.items.length === 0) return;
 
         const titleDiv = document.createElement('div');
         titleDiv.className = 'market-category-title';
