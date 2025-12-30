@@ -9,7 +9,8 @@ const state = {
     data: null,
     filterMovements: 'monthly',
     filterSearch: '',
-    theme: localStorage.getItem('theme') || 'dark'
+    theme: localStorage.getItem('theme') || 'dark',
+    privacyMode: localStorage.getItem('privacyMode') === 'true'
 };
 
 // ════════════════════════════════════════════════════════════════════════
@@ -18,6 +19,7 @@ const state = {
 
 document.addEventListener('DOMContentLoaded', async () => {
     applyTheme(state.theme);
+    applyPrivacyMode(state.privacyMode);
     await fetchData();
     setupEvents();
 });
@@ -472,6 +474,11 @@ function setupEvents() {
 
     // Refresh button
     document.getElementById('refresh-btn').addEventListener('click', fetchData);
+
+    // Privacy mode toggle
+    document.getElementById('privacy-btn').addEventListener('click', () => {
+        applyPrivacyMode(!state.privacyMode);
+    });
 }
 
 // ════════════════════════════════════════════════════════════════════════
@@ -516,4 +523,28 @@ function applyTheme(t) {
     document.body.setAttribute('data-theme', t);
     state.theme = t;
     localStorage.setItem('theme', t);
+}
+
+// ════════════════════════════════════════════════════════════════════════
+// PRIVACY MODE
+// ════════════════════════════════════════════════════════════════════════
+
+function applyPrivacyMode(isPrivate) {
+    state.privacyMode = isPrivate;
+    localStorage.setItem('privacyMode', isPrivate);
+    const btn = document.getElementById('privacy-btn');
+
+    if (isPrivate) {
+        document.body.classList.add('privacy-mode');
+        if (btn) {
+            btn.classList.add('active');
+            btn.textContent = '🙈';
+        }
+    } else {
+        document.body.classList.remove('privacy-mode');
+        if (btn) {
+            btn.classList.remove('active');
+            btn.textContent = '👁';
+        }
+    }
 }

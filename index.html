@@ -25,6 +25,7 @@
             <div class="flex items-center">
                 <div class="market-ticker" id="header-ticker"></div>
                 <div class="header-actions">
+                    <button id="privacy-btn" class="privacy-btn" title="Değerleri Gizle/Göster">👁</button>
                     <button id="theme-btn">◐</button>
                     <button id="refresh-btn">⟳</button>
                 </div>
@@ -37,22 +38,22 @@
                 <div class="kpi-row">
                     <div class="card-kpi">
                         <div class="label">Toplam Varlık</div>
-                        <div class="value-lg num" id="kpi-total">--</div>
-                        <div class="sub-value num text-muted" id="kpi-total-sub">--</div>
+                        <div class="value-lg num sensitive" id="kpi-total">--</div>
+                        <div class="sub-value num text-muted sensitive" id="kpi-total-sub">--</div>
                     </div>
                     <div class="card-kpi">
                         <div class="label">Nakit</div>
-                        <div class="value-lg num" id="kpi-cash">--</div>
+                        <div class="value-lg num sensitive" id="kpi-cash">--</div>
                         <div class="sub-value num text-muted" id="kpi-cash-pct">--%</div>
                     </div>
                     <div class="card-kpi">
                         <div class="label">Portföy Değeri</div>
-                        <div class="value-lg num" id="kpi-stock">--</div>
+                        <div class="value-lg num sensitive" id="kpi-stock">--</div>
                     </div>
                     <div class="card-kpi">
                         <div class="label">Net Kar/Zarar</div>
-                        <div class="value-lg num" id="kpi-pl">--</div>
-                        <div class="sub-value num" id="kpi-pl-pct">--%</div>
+                        <div class="value-lg num sensitive" id="kpi-pl">--</div>
+                        <div class="sub-value num sensitive" id="kpi-pl-pct">--%</div>
                     </div>
                 </div>
 

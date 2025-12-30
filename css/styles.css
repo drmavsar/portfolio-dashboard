@@ -492,3 +492,21 @@ tr:hover {
         opacity: 0.5;
     }
 }
+
+/* ════════════════════════════════════════════════════════════════════════
+ * PRIVACY MODE
+ * ════════════════════════════════════════════════════════════════════════
+ */
+.sensitive {
+    transition: filter 0.3s ease;
+}
+
+.privacy-mode .sensitive {
+    filter: blur(12px);
+    user-select: none;
+    pointer-events: none;
+}
+
+.privacy-btn.active {
+    color: var(--color-brand);
+}
