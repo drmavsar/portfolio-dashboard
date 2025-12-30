@@ -417,7 +417,7 @@ function renderMarketNative() {
                     <span class="text-muted num" style="font-size:11px">${formatMoney(fiyat)}</span>
                 </div>
                 <div class="num ${isUp ? 'text-up' : 'text-down'}" style="font-size:13px; font-weight:500;">
-                    ${isUp ? '▲' : '▼'} %${(fark * 100).toFixed(2)}
+                    ${isUp ? '▲' : '▼'} %${(fark).toFixed(2)}
                 </div>
             `;
             listContainer.appendChild(itemDiv);
