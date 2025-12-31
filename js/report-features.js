@@ -1,81 +1,9 @@
 /**
  * Report and Enhanced Features
- * Annual report, charts, and investing.com links
+ * Annual report and charts
+ *
+ * Note: openInvesting() function is defined in app.js
  */
-
-// ════════════════════════════════════════════════════════════════════════
-// INVESTING.COM STOCK LINKS
-// ════════════════════════════════════════════════════════════════════════
-
-const investingMap = {
-    'AEFES': 'anadolu-efes',
-    'AKBNK': 'akbank',
-    'AKSEN': 'aksa-enerji',
-    'ALARK': 'alarko-holding',
-    'ALBRK': 'albaraka-turk',
-    'ALGYO': 'alarko-gmyo',
-    'ARCLK': 'arcelik',
-    'ASELS': 'aselsan',
-    'AYDEM': 'aydem-enerji',
-    'AYGAZ': 'aygaz',
-    'BIMAS': 'bim-magazalar',
-    'BRISA': 'brisa',
-    'CCOLA': 'coca-cola-icecek',
-    'CIMSA': 'cimsa',
-    'DOAS': 'dogus-otomotiv',
-    'DOHOL': 'dogan-holding',
-    'EKGYO': 'emlak-konut-gmyo',
-    'ENKAI': 'enka-insaat',
-    'ENJSA': 'enerjisa-enerji',
-    'EREGL': 'eregli-demir-celik',
-    'FROTO': 'ford-otosan',
-    'GARAN': 'garanti-bankasi',
-    'GSRAY': 'galatasaray',
-    'GUBRF': 'gubre-fabrik.',
-    'HALKB': 'turkiye-halk-bankasi',
-    'ISCTR': 'is-bankasi',
-    'ISGYO': 'is-gmyo',
-    'KCHOL': 'koc-holding',
-    'KORDS': 'kordsa',
-    'KOZAL': 'koza-altin',
-    'KRDMD': 'kardemir-d',
-    'MAVI': 'mavi-giyim-sanayi-ve-ticaret-as',
-    'MGROS': 'migros',
-    'ODAS': 'odas-elektrik',
-    'OYAKC': 'oyak-cimento',
-    'PETKM': 'petkim',
-    'PGSUS': 'pegasus-hava-yollari',
-    'SAHOL': 'sabanci-holding',
-    'SASA': 'sasa-polyester',
-    'SISE': 'sise-cam',
-    'SKBNK': 'sekerbank',
-    'SOKM': 'sok-marketler',
-    'TAVHL': 'tav-havalimanlari',
-    'TCELL': 'turkcell',
-    'THYAO': 'turk-hava-yollari',
-    'TKFEN': 'tekfen-holding',
-    'TOASO': 'tofas',
-    'TSKB': 'tskb',
-    'TTKOM': 'turk-telekom',
-    'TUPRS': 'tupras',
-    'ULKER': 'ulker-biskuvi',
-    'VAKBN': 'vakiflar-bankasi',
-    'VESTL': 'vestel',
-    'YKBNK': 'yapi-ve-kredi-bank',
-    'ZOREN': 'zorlu-enerji'
-};
-
-function openInvesting(sembol) {
-    const slug = investingMap[sembol.toUpperCase()];
-    if (slug) {
-        window.open(`https://tr.investing.com/equities/${slug}`, '_blank');
-    } else {
-        window.open(`https://tr.investing.com/search/?q=${sembol}`, '_blank');
-    }
-}
-
-// Make it globally available
-window.openInvesting = openInvesting;
 
 // ════════════════════════════════════════════════════════════════════════
 // ANNUAL REPORT
