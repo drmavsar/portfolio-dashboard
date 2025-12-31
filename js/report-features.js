@@ -17,6 +17,13 @@ function renderReport() {
     const hareketler = state.data?.hareketler || [];
     const months = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
 
+    // Debug: Check if we have data
+    console.log('renderReport called for year:', year);
+    console.log('Snapshots count:', snapshots.length);
+    console.log('Hareketler count:', hareketler.length);
+    console.log('First snapshot:', snapshots[0]);
+    console.log('First hareket:', hareketler[0]);
+
     // Parse snapshot date
     const parseSnapDate = (s) => {
         const t = s['Tarih'];
@@ -208,6 +215,13 @@ function renderReportCharts(monthlyStats) {
     const expenseData = monthlyStats.map(m => m.expense);
     const savingsData = monthlyStats.map(m => m.savings);
     const stockData = monthlyStats.map(m => m.endAsset); // Simplified
+
+    // Debug: Check chart data
+    console.log('Chart labels:', labels);
+    console.log('Asset data:', assetData);
+    console.log('Income data:', incomeData);
+    console.log('Expense data:', expenseData);
+    console.log('Savings data:', savingsData);
 
     // Destroy old charts
     Object.values(myCharts).forEach(chart => chart?.destroy());
