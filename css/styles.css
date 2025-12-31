@@ -510,3 +510,59 @@ tr:hover {
 .privacy-btn.active {
     color: var(--color-brand);
 }
+
+/* ════════════════════════════════════════════════════════════════════════
+ * REPORT GRIDS & CHARTS
+ * ════════════════════════════════════════════════════════════════════════
+ */
+.grid-5 {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 24px;
+    margin-bottom: 24px;
+}
+
+.grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 24px;
+}
+
+@media (max-width: 1200px) {
+    .grid-5 {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .grid-5 {
+        grid-template-columns: 1fr;
+    }
+    .grid-2 {
+        grid-template-columns: 1fr;
+    }
+}
+
+.chart-container {
+    position: relative;
+    height: 280px;
+    width: 100%;
+    padding: 16px;
+}
+
+.text-brand {
+    color: var(--color-brand);
+}
+
+/* Stock Symbol Link */
+.stock-link {
+    cursor: pointer;
+    border-bottom: 1px dashed var(--text-tertiary);
+    transition: all 0.2s;
+}
+
+.stock-link:hover {
+    color: var(--color-brand);
+    border-bottom-color: var(--color-brand);
+}

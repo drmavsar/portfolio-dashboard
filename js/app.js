@@ -225,7 +225,7 @@ function renderPortfolioGrouped() {
             rowsHtml += `
                 <tr>
                     <td class="fw-medium" style="padding-left:24px">
-                        ${sembol}
+                        <span class="stock-link" onclick="openInvesting('${sembol}')" title="Investing.com'da aç">${sembol}</span>
                         <span class="text-muted" style="font-size:11px">(${h._calc.adet})</span>
                     </td>
                     <td class="text-right num">${formatMoney(fiyat)}</td>
@@ -460,13 +460,18 @@ function setupEvents() {
             document.querySelectorAll('.tab-link').forEach(b => b.classList.remove('active'));
             e.target.classList.add('active');
 
-            ['portfolio', 'movements', 'accounts'].forEach(v => {
+            ['portfolio', 'movements', 'accounts', 'report'].forEach(v => {
                 const el = document.getElementById('view-' + v);
                 if (el) el.classList.add('hidden');
             });
 
             const target = document.getElementById('view-' + e.target.dataset.tab);
             if (target) target.classList.remove('hidden');
+
+            // Render report when tab is activated
+            if (e.target.dataset.tab === 'report' && window.renderReport) {
+                window.renderReport();
+            }
         });
     });
 
@@ -501,6 +506,14 @@ function setupEvents() {
     document.getElementById('privacy-btn').addEventListener('click', () => {
         applyPrivacyMode(!state.privacyMode);
     });
+
+    // Report year selector
+    const yearSelect = document.getElementById('report-year');
+    if (yearSelect) {
+        yearSelect.addEventListener('change', () => {
+            if (window.renderReport) window.renderReport();
+        });
+    }
 }
 
 // ════════════════════════════════════════════════════════════════════════
