@@ -89,7 +89,7 @@ function renderReport() {
         yearlyIncome += income;
         yearlyExpense += expense;
         if (i === 11) endTotal = monthEnd;
-    });
+    }
 
     const yearlySavings = yearlyIncome - yearlyExpense;
     const yearlySavingsRate = yearlyIncome > 0 ? (yearlySavings / yearlyIncome * 100) : 0;
