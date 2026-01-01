@@ -50,8 +50,10 @@ const investingMap = {
     'KORDS': 'kordsa',
     'KOZAL': 'koza-altin',
     'KRDMD': 'kardemir-d',
+    'LOGO' : 'logo-yazilim',
     'MAVI': 'mavi-giyim-sanayi-ve-ticaret-as',
     'MGROS': 'migros',
+    'MPARK': 'mlp-saglik',
     'ODAS': 'odas-elektrik',
     'OYAKC': 'oyak-cimento',
     'PETKM': 'petkim',
@@ -534,18 +536,13 @@ function setupEvents() {
             document.querySelectorAll('.tab-link').forEach(b => b.classList.remove('active'));
             e.target.classList.add('active');
 
-            ['portfolio', 'movements', 'accounts', 'report'].forEach(v => {
+            ['portfolio', 'movements', 'accounts'].forEach(v => {
                 const el = document.getElementById('view-' + v);
                 if (el) el.classList.add('hidden');
             });
 
             const target = document.getElementById('view-' + e.target.dataset.tab);
             if (target) target.classList.remove('hidden');
-
-            // Render report when tab is activated
-            if (e.target.dataset.tab === 'report' && window.renderReport) {
-                window.renderReport();
-            }
         });
     });
 
@@ -580,14 +577,6 @@ function setupEvents() {
     document.getElementById('privacy-btn').addEventListener('click', () => {
         applyPrivacyMode(!state.privacyMode);
     });
-
-    // Report year selector
-    const yearSelect = document.getElementById('report-year');
-    if (yearSelect) {
-        yearSelect.addEventListener('change', () => {
-            if (window.renderReport) window.renderReport();
-        });
-    }
 }
 
 // ════════════════════════════════════════════════════════════════════════

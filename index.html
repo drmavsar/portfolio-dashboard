@@ -9,7 +9,6 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/styles.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
@@ -62,7 +61,6 @@
                     <button class="tab-link active" data-tab="portfolio">Portföy</button>
                     <button class="tab-link" data-tab="movements">Hareketler</button>
                     <button class="tab-link" data-tab="accounts">Hesaplar</button>
-                    <button class="tab-link" data-tab="report">Yıllık Rapor</button>
                 </nav>
 
                 <div id="tab-content">
@@ -106,64 +104,6 @@
                         <div id="accounts-grid" class="flex-col gap-4"></div>
                     </div>
 
-                    <div id="view-report" class="hidden">
-                        <!-- Header -->
-                        <div class="flex" style="justify-content:space-between; align-items:center; margin-bottom:24px;">
-                            <h2 style="font-size:18px; font-weight:600;">Yönetici Özeti</h2>
-                            <select id="report-year" style="background:var(--bg-surface); color:var(--text-primary); border:1px solid var(--border-subtle); padding:8px 16px; border-radius:8px;">
-                                <option value="2025">2025</option>
-                                <option value="2024">2024</option>
-                            </select>
-                        </div>
-
-                        <!-- Özet Kartları -->
-                        <div class="grid-5" id="report-cards"></div>
-
-                        <!-- Aylık Detay Tablosu -->
-                        <div class="table-wrapper">
-                            <div style="padding:16px; border-bottom:1px solid var(--border-subtle); font-weight:600;">Aylık Finansal Detay</div>
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th style="padding-left:24px">Ay</th>
-                                        <th class="text-right">Varlık Başı</th>
-                                        <th class="text-right">Varlık Sonu</th>
-                                        <th class="text-right">Değişim</th>
-                                        <th class="text-right">Gelir</th>
-                                        <th class="text-right">Gider</th>
-                                        <th class="text-right">Tasarruf</th>
-                                        <th class="text-right" style="padding-right:24px">Tas. Oranı</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="report-body"></tbody>
-                                <tfoot id="report-footer"></tfoot>
-                            </table>
-                        </div>
-
-                        <!-- Grafikler -->
-                        <div class="grid-2">
-                            <div class="table-wrapper">
-                                <div style="padding:16px; border-bottom:1px solid var(--border-subtle); font-weight:600; font-size:13px;">Toplam Varlık Trendi</div>
-                                <div class="chart-container"><canvas id="chart-total-assets"></canvas></div>
-                            </div>
-                            <div class="table-wrapper">
-                                <div style="padding:16px; border-bottom:1px solid var(--border-subtle); font-weight:600; font-size:13px;">Aylık Gelir vs Gider</div>
-                                <div class="chart-container"><canvas id="chart-income-expense"></canvas></div>
-                            </div>
-                        </div>
-
-                        <div class="grid-2">
-                            <div class="table-wrapper">
-                                <div style="padding:16px; border-bottom:1px solid var(--border-subtle); font-weight:600; font-size:13px;">Hisse Portföyü Değişimi</div>
-                                <div class="chart-container"><canvas id="chart-stock-trend"></canvas></div>
-                            </div>
-                            <div class="table-wrapper">
-                                <div style="padding:16px; border-bottom:1px solid var(--border-subtle); font-weight:600; font-size:13px;">Aylık Tasarruf</div>
-                                <div class="chart-container"><canvas id="chart-savings"></canvas></div>
-                            </div>
-                        </div>
-                    </div>
-
                 </div>
             </main>
 
@@ -186,6 +126,5 @@
 
     <script src="js/auth.js"></script>
     <script src="js/app.js"></script>
-    <script src="js/report-features.js"></script>
 </body>
 </html>
