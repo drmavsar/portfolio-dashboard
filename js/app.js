@@ -392,7 +392,8 @@ function renderAccounts() {
 
     const accs = state.data.hesaplar || [];
     const grouped = {};
-    const kurlar = state.data.kurlar || {};
+    const snaps = state.data.snapshots || [];
+    const snapshot = snaps.length > 0 ? snaps[0] : {};
 
     // Group accounts by bank
     accs.forEach(a => {
@@ -402,66 +403,43 @@ function renderAccounts() {
         const rawVal = parseFloat(a['Bakiye'] || 0);
         const pb = a['PB'] || 'TRY';
         const hesapAdi = a['Hesap Adı'] || '';
+        const hesapKodu = a['Hesap Kodu'] || '';
 
-        // Calculate TRY equivalent
-        let valTRY = rawVal;
-        let exchangeRate = 1;
+        // Try to get TRY value from snapshots first (pre-calculated)
+        let valTRY = null;
         let goldType = null;
 
-        if (pb !== 'TRY') {
-            // Check if it's a gold account (15 Altın, 15 Çeyrek, Cumhuriyet, Bilezik)
-            if (pb === 'Altın' || hesapAdi.includes('Altın') || hesapAdi.includes('Çeyrek') || hesapAdi.includes('Cumhuriyet') || hesapAdi.includes('Bilezik')) {
-                // Determine gold type from account name and use correct formula
-                if (hesapAdi.includes('15 Altın') || hesapAdi === 'Altın') {
-                    goldType = '15 Altın';
-                    // Formula: GRA × rawVal (rawVal is the quantity)
-                    if (kurlar['GRA']) {
-                        valTRY = rawVal * kurlar['GRA'].alis;
-                    }
-                } else if (hesapAdi.includes('15 Çeyrek') || hesapAdi.includes('Çeyrek')) {
-                    goldType = '15 Çeyrek';
-                    // Formula: CEYREKALTIN × rawVal (rawVal should be something like 6)
-                    // But based on Excel: CEYREKALTIN × 6 (fixed multiplier)
-                    if (kurlar['CEYREKALTIN']) {
-                        valTRY = kurlar['CEYREKALTIN'].alis * rawVal;
-                    } else if (kurlar['GRA']) {
-                        valTRY = kurlar['GRA'].alis * rawVal; // Fallback
-                    }
-                } else if (hesapAdi.includes('Cumhuriyet')) {
-                    goldType = 'Cumhuriyet';
-                    // Formula: CUMHURIYETALTINI × rawVal (rawVal should be 5)
-                    if (kurlar['CUMHURIYETALTINI']) {
-                        valTRY = kurlar['CUMHURIYETALTINI'].alis * rawVal;
-                    } else if (kurlar['GRA']) {
-                        valTRY = kurlar['GRA'].alis * rawVal; // Fallback
-                    }
-                } else if (hesapAdi.includes('Bilezik')) {
-                    goldType = 'Bilezik';
-                    // Formula: YIA × rawVal × 25 (rawVal should be 2, 25 is grams per bracelet)
-                    if (kurlar['YIA']) {
-                        valTRY = kurlar['YIA'].alis * rawVal * 25;
-                    } else if (kurlar['GRA']) {
-                        valTRY = kurlar['GRA'].alis * rawVal * 25; // Fallback
-                    }
-                } else {
-                    goldType = 'Altın';
-                    if (kurlar['GRA']) {
-                        valTRY = rawVal * kurlar['GRA'].alis;
-                    }
-                }
-
-                // Track gold units separately
-                if (!grouped[banka].goldUnits[goldType]) {
-                    grouped[banka].goldUnits[goldType] = 0;
-                }
-                grouped[banka].goldUnits[goldType] += rawVal;
-
-                // Exchange rate not used since we calculated valTRY directly
-                exchangeRate = 1;
-            } else if (kurlar[pb]) {
-                exchangeRate = kurlar[pb].alis;
-                valTRY = rawVal * exchangeRate;
+        // Map account codes to snapshot columns (EV001-EV004 for gold accounts)
+        if (hesapKodu === 'EV001' && snapshot['EV001 TRY']) {
+            valTRY = parseFloat(snapshot['EV001 TRY'] || 0);
+            goldType = '15 Altın';
+        } else if (hesapKodu === 'EV002' && snapshot['EV002 TRY']) {
+            valTRY = parseFloat(snapshot['EV002 TRY'] || 0);
+            goldType = '15 Çeyrek';
+        } else if (hesapKodu === 'EV003' && snapshot['EV003 TRY']) {
+            valTRY = parseFloat(snapshot['EV003 TRY'] || 0);
+            goldType = 'Cumhuriyet';
+        } else if (hesapKodu === 'EV004' && snapshot['EV004 TRY']) {
+            valTRY = parseFloat(snapshot['EV004 TRY'] || 0);
+            goldType = 'Bilezik';
+        } else if (pb === 'TRY') {
+            valTRY = rawVal;
+        } else {
+            // Fallback: calculate from exchange rate for non-gold accounts
+            const kurlar = state.data.kurlar || {};
+            if (kurlar[pb]) {
+                valTRY = rawVal * kurlar[pb].alis;
+            } else {
+                valTRY = rawVal;
             }
+        }
+
+        // Track gold units separately
+        if (goldType) {
+            if (!grouped[banka].goldUnits[goldType]) {
+                grouped[banka].goldUnits[goldType] = 0;
+            }
+            grouped[banka].goldUnits[goldType] += rawVal;
         }
 
         a._calculated = { rawVal, pb, valTRY, goldType };
