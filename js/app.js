@@ -405,33 +405,34 @@ function renderAccounts() {
         const hesapAdi = a['Hesap Adı'] || '';
         const hesapKodu = a['Hesap Kodu'] || '';
 
-        // Try to get TRY value from snapshots first (pre-calculated)
-        let valTRY = null;
-        let goldType = null;
+        // Use pre-calculated TRY value from hesaplar data (column J in Excel)
+        // Try different possible column names
+        let valTRY = parseFloat(a['TRY Karşılığı'] || a['TRY'] || a['Tutar TRY'] || a['TRY Değeri'] || 0);
 
-        // Map account codes to snapshot columns (EV001-EV004 for gold accounts)
-        if (hesapKodu === 'EV001' && snapshot['EV001 TRY']) {
-            valTRY = parseFloat(snapshot['EV001 TRY'] || 0);
-            goldType = '15 Altın';
-        } else if (hesapKodu === 'EV002' && snapshot['EV002 TRY']) {
-            valTRY = parseFloat(snapshot['EV002 TRY'] || 0);
-            goldType = '15 Çeyrek';
-        } else if (hesapKodu === 'EV003' && snapshot['EV003 TRY']) {
-            valTRY = parseFloat(snapshot['EV003 TRY'] || 0);
-            goldType = 'Cumhuriyet';
-        } else if (hesapKodu === 'EV004' && snapshot['EV004 TRY']) {
-            valTRY = parseFloat(snapshot['EV004 TRY'] || 0);
-            goldType = 'Bilezik';
-        } else if (pb === 'TRY') {
-            valTRY = rawVal;
-        } else {
-            // Fallback: calculate from exchange rate for non-gold accounts
-            const kurlar = state.data.kurlar || {};
-            if (kurlar[pb]) {
-                valTRY = rawVal * kurlar[pb].alis;
-            } else {
+        // If no TRY value found, fallback to calculation
+        if (valTRY === 0) {
+            if (pb === 'TRY') {
                 valTRY = rawVal;
+            } else {
+                const kurlar = state.data.kurlar || {};
+                if (kurlar[pb]) {
+                    valTRY = rawVal * kurlar[pb].alis;
+                } else {
+                    valTRY = rawVal;
+                }
             }
+        }
+
+        // Determine gold type for display
+        let goldType = null;
+        if (hesapKodu === 'EV001' || hesapAdi.includes('15 Altın')) {
+            goldType = '15 Altın';
+        } else if (hesapKodu === 'EV002' || hesapAdi.includes('Çeyrek')) {
+            goldType = '15 Çeyrek';
+        } else if (hesapKodu === 'EV003' || hesapAdi.includes('Cumhuriyet')) {
+            goldType = 'Cumhuriyet';
+        } else if (hesapKodu === 'EV004' || hesapAdi.includes('Bilezik')) {
+            goldType = 'Bilezik';
         }
 
         // Track gold units separately
