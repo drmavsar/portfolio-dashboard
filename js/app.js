@@ -414,38 +414,39 @@ function renderAccounts() {
                 // Determine gold type from account name and use correct formula
                 if (hesapAdi.includes('15 Altın') || hesapAdi === 'Altın') {
                     goldType = '15 Altın';
-                    // Formula: GRA × adet (rawVal already contains adet)
+                    // Formula: GRA × rawVal (rawVal is the quantity)
                     if (kurlar['GRA']) {
-                        exchangeRate = kurlar['GRA'].alis;
+                        valTRY = rawVal * kurlar['GRA'].alis;
                     }
                 } else if (hesapAdi.includes('15 Çeyrek') || hesapAdi.includes('Çeyrek')) {
                     goldType = '15 Çeyrek';
-                    // Formula: CEYREKALTIN × 6
+                    // Formula: CEYREKALTIN × rawVal (rawVal should be something like 6)
+                    // But based on Excel: CEYREKALTIN × 6 (fixed multiplier)
                     if (kurlar['CEYREKALTIN']) {
-                        exchangeRate = kurlar['CEYREKALTIN'].alis * 6;
+                        valTRY = kurlar['CEYREKALTIN'].alis * rawVal;
                     } else if (kurlar['GRA']) {
-                        exchangeRate = kurlar['GRA'].alis; // Fallback
+                        valTRY = kurlar['GRA'].alis * rawVal; // Fallback
                     }
                 } else if (hesapAdi.includes('Cumhuriyet')) {
                     goldType = 'Cumhuriyet';
-                    // Formula: CUMHURIYETALTINI × 5
+                    // Formula: CUMHURIYETALTINI × rawVal (rawVal should be 5)
                     if (kurlar['CUMHURIYETALTINI']) {
-                        exchangeRate = kurlar['CUMHURIYETALTINI'].alis * 5;
+                        valTRY = kurlar['CUMHURIYETALTINI'].alis * rawVal;
                     } else if (kurlar['GRA']) {
-                        exchangeRate = kurlar['GRA'].alis; // Fallback
+                        valTRY = kurlar['GRA'].alis * rawVal; // Fallback
                     }
                 } else if (hesapAdi.includes('Bilezik')) {
                     goldType = 'Bilezik';
-                    // Formula: YIA × 2 × 25 (2 is number of bracelets, 25 is grams per bracelet)
+                    // Formula: YIA × rawVal × 25 (rawVal should be 2, 25 is grams per bracelet)
                     if (kurlar['YIA']) {
-                        exchangeRate = kurlar['YIA'].alis * 2 * 25;
+                        valTRY = kurlar['YIA'].alis * rawVal * 25;
                     } else if (kurlar['GRA']) {
-                        exchangeRate = kurlar['GRA'].alis * 2 * 25; // Fallback
+                        valTRY = kurlar['GRA'].alis * rawVal * 25; // Fallback
                     }
                 } else {
                     goldType = 'Altın';
                     if (kurlar['GRA']) {
-                        exchangeRate = kurlar['GRA'].alis;
+                        valTRY = rawVal * kurlar['GRA'].alis;
                     }
                 }
 
@@ -454,10 +455,13 @@ function renderAccounts() {
                     grouped[banka].goldUnits[goldType] = 0;
                 }
                 grouped[banka].goldUnits[goldType] += rawVal;
+
+                // Exchange rate not used since we calculated valTRY directly
+                exchangeRate = 1;
             } else if (kurlar[pb]) {
                 exchangeRate = kurlar[pb].alis;
+                valTRY = rawVal * exchangeRate;
             }
-            valTRY = rawVal * exchangeRate;
         }
 
         a._calculated = { rawVal, pb, valTRY, goldType };
