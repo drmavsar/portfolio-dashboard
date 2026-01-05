@@ -405,6 +405,11 @@ function renderAccounts() {
         const hesapAdi = a['Hesap Adı'] || '';
         const hesapKodu = a['Hesap Kodu'] || '';
 
+        // Debug: log column names for gold accounts
+        if (hesapKodu && hesapKodu.startsWith('EV')) {
+            console.log('Gold account:', hesapKodu, 'Available columns:', Object.keys(a));
+        }
+
         // Use pre-calculated TRY value from hesaplar data (column J in Excel)
         // Try different possible column names
         let valTRY = parseFloat(a['TRY Karşılığı'] || a['TRY'] || a['Tutar TRY'] || a['TRY Değeri'] || 0);
