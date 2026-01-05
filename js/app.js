@@ -189,7 +189,7 @@ function renderKPI() {
     const total = getVal(curr, 'Toplam Varlık');
     const diff = total - getVal(prev, 'Toplam Varlık');
     const diffSign = diff >= 0 ? '+' : '';
-    setHtml('kpi-total', formatMoney(total) + " ₺");
+    setHtml('kpi-total', formatMoney(total));
     setHtml('kpi-total-sub', `${diffSign}${formatMoney(diff)} (24s)`);
     document.getElementById('kpi-total-sub').className = "sub-value num sensitive " + (diff >= 0 ? 'text-up' : 'text-down');
 
@@ -198,32 +198,49 @@ function renderKPI() {
     const doviz = getVal(curr, 'Döviz TRY');
     const altin = getVal(curr, 'Altın TRY');
     const cash = nakit + doviz + altin;
-    setHtml('kpi-cash', formatMoney(cash) + " ₺");
-    setHtml('kpi-cash-breakdown', `TL: ${formatMoney(nakit)} | Döviz: ${formatMoney(doviz)} | Altın: ${formatMoney(altin)}`);
+    setHtml('kpi-cash', formatMoney(cash));
+    setHtml('kpi-cash-breakdown', `TL: ${formatMoney(nakit)}<br>Döviz: ${formatMoney(doviz)}<br>Altın: ${formatMoney(altin)}`);
 
-    // Portfolio Value with breakdown (Mehmet, Ahmet Burak, Salih)
-    const stock = getVal(curr, 'Hisse TRY');
-    const mehmet = getVal(curr, 'Mehmet Hisse');
-    const ahmet = getVal(curr, 'Ahmet Burak Hisse');
-    const salih = getVal(curr, 'Salih Hisse');
-    setHtml('kpi-stock', formatMoney(stock) + " ₺");
-    setHtml('kpi-stock-breakdown', `Mehmet: ${formatMoney(mehmet)} | Ahmet: ${formatMoney(ahmet)} | Salih: ${formatMoney(salih)}`);
+    // Portfolio Value with breakdown - calculate from hisseler
+    const hisseler = state.data.hisseler || [];
+    let mehmetTotal = 0, ahmetTotal = 0, salihTotal = 0;
 
-    // Asset Distribution Pie Chart
+    hisseler.forEach(h => {
+        const hesap = h['Hesap'] || '';
+        const adet = parseFloat(h['Adet'] || 0);
+        const fiyat = parseFloat(h['Son İşlem Fiyatı'] || 0);
+        const tutar = adet * fiyat;
+
+        if (hesap.includes('Mehmet')) {
+            mehmetTotal += tutar;
+        } else if (hesap.includes('Ahmet Burak') || hesap.includes('Ahmet')) {
+            ahmetTotal += tutar;
+        } else if (hesap.includes('Salih')) {
+            salihTotal += tutar;
+        }
+    });
+
+    const stock = mehmetTotal + ahmetTotal + salihTotal;
+    setHtml('kpi-stock', formatMoney(stock));
+    setHtml('kpi-stock-breakdown', `Mehmet: ${formatMoney(mehmetTotal)}<br>Ahmet: ${formatMoney(ahmetTotal)}<br>Salih: ${formatMoney(salihTotal)}`);
+
+    // Asset Distribution Pie Chart - TL, Döviz, Altın, Portföy
     const ctx = document.getElementById('asset-pie-chart');
     if (ctx) {
         if (assetPieChart) assetPieChart.destroy();
 
-        const cashPct = total > 0 ? (cash / total * 100) : 0;
+        const tlPct = total > 0 ? (nakit / total * 100) : 0;
+        const dovizPct = total > 0 ? (doviz / total * 100) : 0;
+        const altinPct = total > 0 ? (altin / total * 100) : 0;
         const stockPct = total > 0 ? (stock / total * 100) : 0;
 
         assetPieChart = new Chart(ctx, {
             type: 'doughnut',
             data: {
-                labels: ['Nakit', 'Portföy'],
+                labels: ['TL', 'Döviz', 'Altın', 'Portföy'],
                 datasets: [{
-                    data: [cashPct, stockPct],
-                    backgroundColor: ['#34d399', '#60a5fa'],
+                    data: [tlPct, dovizPct, altinPct, stockPct],
+                    backgroundColor: ['#34d399', '#fbbf24', '#f59e0b', '#60a5fa'],
                     borderWidth: 0
                 }]
             },
@@ -236,8 +253,8 @@ function renderKPI() {
                         position: 'bottom',
                         labels: {
                             color: 'rgb(156, 163, 175)',
-                            font: { size: 10 },
-                            padding: 8,
+                            font: { size: 9 },
+                            padding: 6,
                             usePointStyle: true
                         }
                     },
@@ -394,17 +411,42 @@ function renderAccounts() {
         if (pb !== 'TRY') {
             // Check if it's a gold account (15 Altın, 15 Çeyrek, Cumhuriyet, Bilezik)
             if (pb === 'Altın' || hesapAdi.includes('Altın') || hesapAdi.includes('Çeyrek') || hesapAdi.includes('Cumhuriyet') || hesapAdi.includes('Bilezik')) {
-                // Determine gold type from account name
+                // Determine gold type from account name and use correct rate
                 if (hesapAdi.includes('15 Altın') || hesapAdi === 'Altın') {
                     goldType = '15 Altın';
+                    // Use GRA (Gram Altın) rate
+                    if (kurlar['GRA']) {
+                        exchangeRate = kurlar['GRA'].alis;
+                    }
                 } else if (hesapAdi.includes('15 Çeyrek') || hesapAdi.includes('Çeyrek')) {
                     goldType = '15 Çeyrek';
+                    // Use CEYREKALTIN rate
+                    if (kurlar['CEYREKALTIN']) {
+                        exchangeRate = kurlar['CEYREKALTIN'].alis;
+                    } else if (kurlar['GRA']) {
+                        exchangeRate = kurlar['GRA'].alis; // Fallback
+                    }
                 } else if (hesapAdi.includes('Cumhuriyet')) {
                     goldType = 'Cumhuriyet';
+                    // Use CUMHURIYETALTINI rate
+                    if (kurlar['CUMHURIYETALTINI']) {
+                        exchangeRate = kurlar['CUMHURIYETALTINI'].alis;
+                    } else if (kurlar['GRA']) {
+                        exchangeRate = kurlar['GRA'].alis; // Fallback
+                    }
                 } else if (hesapAdi.includes('Bilezik')) {
                     goldType = 'Bilezik';
+                    // Use YIA (Bilezik gram) rate x 25
+                    if (kurlar['YIA']) {
+                        exchangeRate = kurlar['YIA'].alis * 25;
+                    } else if (kurlar['GRA']) {
+                        exchangeRate = kurlar['GRA'].alis * 25; // Fallback
+                    }
                 } else {
                     goldType = 'Altın';
+                    if (kurlar['GRA']) {
+                        exchangeRate = kurlar['GRA'].alis;
+                    }
                 }
 
                 // Track gold units separately
@@ -412,11 +454,6 @@ function renderAccounts() {
                     grouped[banka].goldUnits[goldType] = 0;
                 }
                 grouped[banka].goldUnits[goldType] += rawVal;
-
-                // Use GRA rate for TRY conversion
-                if (kurlar['GRA']) {
-                    exchangeRate = kurlar['GRA'].alis;
-                }
             } else if (kurlar[pb]) {
                 exchangeRate = kurlar[pb].alis;
             }
