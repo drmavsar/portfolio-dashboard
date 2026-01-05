@@ -405,9 +405,16 @@ function renderAccounts() {
         const hesapAdi = a['Hesap Adı'] || '';
         const hesapKodu = a['Hesap Kodu'] || '';
 
-        // Debug: log column names for gold accounts
-        if (hesapKodu && hesapKodu.startsWith('EV')) {
-            console.log('Gold account:', hesapKodu, 'Available columns:', Object.keys(a));
+        // Debug: log ALL accounts with gold in name
+        if (hesapAdi.includes('Altın') || hesapAdi.includes('Çeyrek') || hesapAdi.includes('Cumhuriyet') || hesapAdi.includes('Bilezik')) {
+            console.log('🟡 Gold account found:', {
+                hesapKodu,
+                hesapAdi,
+                pb,
+                bakiye: rawVal,
+                columns: Object.keys(a),
+                allData: a
+            });
         }
 
         // Use pre-calculated TRY value from hesaplar data (column J in Excel)
