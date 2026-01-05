@@ -175,6 +175,8 @@ function renderHeader() {
 // Render KPI Cards
 // ────────────────────────────────────────────────────────────────────────
 
+let assetPieChart = null;
+
 function renderKPI() {
     const snaps = state.data.snapshots || [];
     if (snaps.length === 0) return;
@@ -191,24 +193,65 @@ function renderKPI() {
     setHtml('kpi-total-sub', `${diffSign}${formatMoney(diff)} (24s)`);
     document.getElementById('kpi-total-sub').className = "sub-value num sensitive " + (diff >= 0 ? 'text-up' : 'text-down');
 
-    // Cash
-    const cash = getVal(curr, 'Nakit TRY') + getVal(curr, 'Döviz TRY') + getVal(curr, 'Altın TRY');
-    const cashPct = total > 0 ? (cash / total) * 100 : 0;
+    // Cash with breakdown
+    const nakit = getVal(curr, 'Nakit TRY');
+    const doviz = getVal(curr, 'Döviz TRY');
+    const altin = getVal(curr, 'Altın TRY');
+    const cash = nakit + doviz + altin;
     setHtml('kpi-cash', formatMoney(cash) + " ₺");
-    setHtml('kpi-cash-pct', `%${cashPct.toFixed(1)} Nakit`);
+    setHtml('kpi-cash-breakdown', `TL: ${formatMoney(nakit)} | Döviz: ${formatMoney(doviz)} | Altın: ${formatMoney(altin)}`);
 
-    // Portfolio Value
+    // Portfolio Value with breakdown (Mehmet, Ahmet Burak, Salih)
     const stock = getVal(curr, 'Hisse TRY');
+    const mehmet = getVal(curr, 'Mehmet Hisse');
+    const ahmet = getVal(curr, 'Ahmet Burak Hisse');
+    const salih = getVal(curr, 'Salih Hisse');
     setHtml('kpi-stock', formatMoney(stock) + " ₺");
+    setHtml('kpi-stock-breakdown', `Mehmet: ${formatMoney(mehmet)} | Ahmet: ${formatMoney(ahmet)} | Salih: ${formatMoney(salih)}`);
 
-    // P/L
-    const stockPL = getVal(curr, 'Hisse K/Z');
-    const stockCost = stock - stockPL;
-    const plPct = stockCost > 0 ? (stockPL / stockCost * 100) : 0;
-    setHtml('kpi-pl', (stockPL >= 0 ? '+' : '') + formatMoney(stockPL) + " ₺");
-    document.getElementById('kpi-pl').className = "value-lg num sensitive " + (stockPL >= 0 ? 'text-up' : 'text-down');
-    setHtml('kpi-pl-pct', `%${plPct.toFixed(2)}`);
-    document.getElementById('kpi-pl-pct').className = "sub-value num sensitive " + (stockPL >= 0 ? 'text-up' : 'text-down');
+    // Asset Distribution Pie Chart
+    const ctx = document.getElementById('asset-pie-chart');
+    if (ctx) {
+        if (assetPieChart) assetPieChart.destroy();
+
+        const cashPct = total > 0 ? (cash / total * 100) : 0;
+        const stockPct = total > 0 ? (stock / total * 100) : 0;
+
+        assetPieChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Nakit', 'Portföy'],
+                datasets: [{
+                    data: [cashPct, stockPct],
+                    backgroundColor: ['#34d399', '#60a5fa'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'bottom',
+                        labels: {
+                            color: 'rgb(156, 163, 175)',
+                            font: { size: 10 },
+                            padding: 8,
+                            usePointStyle: true
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.label + ': %' + context.parsed.toFixed(1);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
 }
 
 // ────────────────────────────────────────────────────────────────────────
@@ -337,25 +380,50 @@ function renderAccounts() {
     // Group accounts by bank
     accs.forEach(a => {
         const banka = a['Banka'] || 'Diğer';
-        if (!grouped[banka]) grouped[banka] = { items: [], totalTRY: 0 };
+        if (!grouped[banka]) grouped[banka] = { items: [], totalTRY: 0, goldUnits: {} };
 
         const rawVal = parseFloat(a['Bakiye'] || 0);
         const pb = a['PB'] || 'TRY';
+        const hesapAdi = a['Hesap Adı'] || '';
 
         // Calculate TRY equivalent
         let valTRY = rawVal;
         let exchangeRate = 1;
+        let goldType = null;
 
         if (pb !== 'TRY') {
-            if (pb === 'Altın' && kurlar['GRA']) {
-                exchangeRate = kurlar['GRA'].alis;
+            // Check if it's a gold account (15 Altın, 15 Çeyrek, Cumhuriyet, Bilezik)
+            if (pb === 'Altın' || hesapAdi.includes('Altın') || hesapAdi.includes('Çeyrek') || hesapAdi.includes('Cumhuriyet') || hesapAdi.includes('Bilezik')) {
+                // Determine gold type from account name
+                if (hesapAdi.includes('15 Altın') || hesapAdi === 'Altın') {
+                    goldType = '15 Altın';
+                } else if (hesapAdi.includes('15 Çeyrek') || hesapAdi.includes('Çeyrek')) {
+                    goldType = '15 Çeyrek';
+                } else if (hesapAdi.includes('Cumhuriyet')) {
+                    goldType = 'Cumhuriyet';
+                } else if (hesapAdi.includes('Bilezik')) {
+                    goldType = 'Bilezik';
+                } else {
+                    goldType = 'Altın';
+                }
+
+                // Track gold units separately
+                if (!grouped[banka].goldUnits[goldType]) {
+                    grouped[banka].goldUnits[goldType] = 0;
+                }
+                grouped[banka].goldUnits[goldType] += rawVal;
+
+                // Use GRA rate for TRY conversion
+                if (kurlar['GRA']) {
+                    exchangeRate = kurlar['GRA'].alis;
+                }
             } else if (kurlar[pb]) {
                 exchangeRate = kurlar[pb].alis;
             }
             valTRY = rawVal * exchangeRate;
         }
 
-        a._calculated = { rawVal, pb, valTRY };
+        a._calculated = { rawVal, pb, valTRY, goldType };
         grouped[banka].items.push(a);
         grouped[banka].totalTRY += valTRY;
     });
@@ -368,9 +436,9 @@ function renderAccounts() {
 
         let rows = '';
         grp.items.forEach(a => {
-            const { rawVal, pb, valTRY } = a._calculated;
+            const { rawVal, pb, valTRY, goldType } = a._calculated;
             const displayVal = formatMoney(valTRY);
-            const subText = pb !== 'TRY' ? `${rawVal} ${pb}` : 'TRY';
+            const subText = goldType ? `${rawVal} ${goldType}` : (pb !== 'TRY' ? `${rawVal} ${pb}` : 'TRY');
 
             rows += `
                 <tr>
@@ -386,10 +454,22 @@ function renderAccounts() {
             `;
         });
 
+        // Build gold summary if any
+        let goldSummary = '';
+        if (Object.keys(grp.goldUnits).length > 0) {
+            const goldParts = Object.entries(grp.goldUnits).map(([type, amount]) => {
+                return `${amount} ${type}`;
+            });
+            goldSummary = `<div style="font-size:11px; color:var(--text-tertiary); margin-top:4px;">${goldParts.join(' | ')}</div>`;
+        }
+
         div.innerHTML = `
-            <div style="padding:12px 24px; border-bottom:1px solid var(--border-subtle); background:var(--bg-surface-hover); display:flex; justify-content:space-between; align-items:center;">
-                <span style="font-weight:600; font-size:12px; letter-spacing:0.05em; color:var(--text-tertiary); text-transform:uppercase;">${bank}</span>
-                <span class="num text-primary sensitive" style="font-size:13px; font-weight:600;">≈ ${formatMoney(grp.totalTRY)} ₺</span>
+            <div style="padding:12px 24px; border-bottom:1px solid var(--border-subtle); background:var(--bg-surface-hover);">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-weight:600; font-size:12px; letter-spacing:0.05em; color:var(--text-tertiary); text-transform:uppercase;">${bank}</span>
+                    <span class="num text-primary sensitive" style="font-size:13px; font-weight:600;">≈ ${formatMoney(grp.totalTRY)} ₺</span>
+                </div>
+                ${goldSummary}
             </div>
             <table>${rows}</table>
         `;

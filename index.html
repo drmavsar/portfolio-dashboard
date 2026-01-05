@@ -9,6 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
@@ -44,16 +45,18 @@
                     <div class="card-kpi">
                         <div class="label">Nakit</div>
                         <div class="value-lg num sensitive" id="kpi-cash">--</div>
-                        <div class="sub-value num text-muted" id="kpi-cash-pct">--%</div>
+                        <div id="kpi-cash-breakdown" class="sub-value num text-muted sensitive">--</div>
                     </div>
                     <div class="card-kpi">
                         <div class="label">Portföy Değeri</div>
                         <div class="value-lg num sensitive" id="kpi-stock">--</div>
+                        <div id="kpi-stock-breakdown" class="sub-value num text-muted sensitive">--</div>
                     </div>
                     <div class="card-kpi">
-                        <div class="label">Net Kar/Zarar</div>
-                        <div class="value-lg num sensitive" id="kpi-pl">--</div>
-                        <div class="sub-value num sensitive" id="kpi-pl-pct">--%</div>
+                        <div class="label">Varlık Dağılımı</div>
+                        <div style="position:relative; height:120px; margin-top:8px;">
+                            <canvas id="asset-pie-chart"></canvas>
+                        </div>
                     </div>
                 </div>
 
