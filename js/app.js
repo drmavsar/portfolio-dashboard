@@ -405,18 +405,6 @@ function renderAccounts() {
         const hesapAdi = a['Hesap Adı'] || '';
         const hesapKodu = a['Hesap Kodu'] || '';
 
-        // Debug: log ALL accounts with gold in name
-        if (hesapAdi.includes('Altın') || hesapAdi.includes('Çeyrek') || hesapAdi.includes('Cumhuriyet') || hesapAdi.includes('Bilezik')) {
-            console.log('🟡 Gold account found:', {
-                hesapKodu,
-                hesapAdi,
-                pb,
-                bakiye: rawVal,
-                columns: Object.keys(a),
-                allData: a
-            });
-        }
-
         // Use pre-calculated TRY value from hesaplar data (column J in Excel)
         // Try different possible column names
         let valTRY = parseFloat(a['TRY Karşılığı'] || a['TRY'] || a['Tutar TRY'] || a['TRY Değeri'] || 0);
@@ -648,13 +636,18 @@ function setupEvents() {
             document.querySelectorAll('.tab-link').forEach(b => b.classList.remove('active'));
             e.target.classList.add('active');
 
-            ['portfolio', 'movements', 'accounts'].forEach(v => {
+            ['portfolio', 'movements', 'accounts', 'reports'].forEach(v => {
                 const el = document.getElementById('view-' + v);
                 if (el) el.classList.add('hidden');
             });
 
             const target = document.getElementById('view-' + e.target.dataset.tab);
             if (target) target.classList.remove('hidden');
+
+            // Render reports when tab is activated
+            if (e.target.dataset.tab === 'reports' && window.renderReports) {
+                window.renderReports();
+            }
         });
     });
 

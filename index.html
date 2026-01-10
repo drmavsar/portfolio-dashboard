@@ -64,6 +64,7 @@
                     <button class="tab-link active" data-tab="portfolio">Portföy</button>
                     <button class="tab-link" data-tab="movements">Hareketler</button>
                     <button class="tab-link" data-tab="accounts">Hesaplar</button>
+                    <button class="tab-link" data-tab="reports">Raporlar</button>
                 </nav>
 
                 <div id="tab-content">
@@ -107,6 +108,34 @@
                         <div id="accounts-grid" class="flex-col gap-4"></div>
                     </div>
 
+                    <div id="view-reports" class="hidden">
+                        <div class="report-controls" style="display:flex; gap:12px; margin-bottom:24px; flex-wrap:wrap; align-items:center;">
+                            <div class="chip" id="chip-total" style="background:var(--bg-surface); border:1px solid var(--border-subtle); padding:8px 16px; border-radius:999px; font-size:12px;">
+                                <strong>Toplam:</strong> <span class="sensitive">—</span>
+                            </div>
+                            <div class="chip" id="chip-change" style="background:var(--bg-surface); border:1px solid var(--border-subtle); padding:8px 16px; border-radius:999px; font-size:12px;">
+                                <strong>Değişim:</strong> <span class="sensitive">—</span>
+                            </div>
+                            <label style="display:flex; align-items:center; gap:8px; background:var(--bg-surface); border:1px solid var(--border-subtle); padding:8px 16px; border-radius:999px; font-size:12px; cursor:pointer;">
+                                <input type="checkbox" id="toggle-normalize" style="cursor:pointer;" />
+                                <span>100=baz göster</span>
+                            </label>
+                        </div>
+
+                        <div class="table-wrapper">
+                            <div style="padding:16px; border-bottom:1px solid var(--border-subtle);">
+                                <strong style="font-size:14px;">Varlık Kompozisyonu & Trend</strong>
+                                <p style="margin:8px 0 0; color:var(--text-tertiary); font-size:12px; line-height:1.5;">
+                                    Varlık bileşenleri (stacked area). Legend'a tıklayıp serileri aç/kapat. Tooltip'te toplamı ve oranı gör.
+                                </p>
+                            </div>
+                            <div style="padding:24px; position:relative; height:420px;">
+                                <canvas id="asset-composition-chart"></canvas>
+                            </div>
+                            <div id="asset-breakdown" style="padding:0 24px 16px; display:flex; gap:10px; flex-wrap:wrap; font-size:11px; color:var(--text-tertiary);"></div>
+                        </div>
+                    </div>
+
                 </div>
             </main>
 
@@ -129,5 +158,6 @@
 
     <script src="js/auth.js"></script>
     <script src="js/app.js"></script>
+    <script src="js/reports.js"></script>
 </body>
 </html>
